@@ -82,7 +82,6 @@ def execute(api: Node):
     api.log(f"node_cons: {node_cons.energy}")
     api.log(f"comms_cons: {float(comms_cons.get_energy())}")
     api.log(f"upt_count: {upt_count}")
-    api.log(f"upt_count: {upt_count}")
     api.log(f"sleep_time: {sleep_time}")
     api.log(f"upt_time: {upt_time}")
     api.log(f"stress_time: {stress_time}")
