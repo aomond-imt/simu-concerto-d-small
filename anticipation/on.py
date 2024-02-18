@@ -17,13 +17,6 @@ EXPORTED_VALUES_SIZE = 1_000  # High value to cover worst cases
 SERVICE_TABLE_ENTRY_SIZE = SERVICE_NAME_SIZE + NODE_ID_SIZE + EXPORTED_VALUES_SIZE
 REQUEST_SIZE = 257
 
-ons_tasks = [
-    [("run0", 10, ("run1", "run2", "run3"))],
-    [("run1", 10, ())],
-    [("run2", 10, ())],
-    [("run3", 10, ())],
-]
-
 
 def execute(api: Node):
     # Energy states
@@ -35,10 +28,9 @@ def execute(api: Node):
     upt_count, sleep_time, upt_time, stress_time, nb_msg_sent, nb_msg_rcv = 0, 0, 0, 0, 0, 0
 
     service_table = {}
-    tasks_list = ons_tasks[api.node_id]
-    termination_list = api.args
-    with open("/home/aomond/leverages/uptimes_schedules/0-60.json") as f:
-        uptimes_schedules = json.load(f)[api.node_id]
+    tasks_list = api.args["ons_tasks"][api.node_id]
+    termination_list = api.args["termination_list"]
+    uptimes_schedules = api.args["uptimes_schedules"][api.node_id]
     for upt in uptimes_schedules:
         # Sleeping period
         api.turn_off()
@@ -56,7 +48,7 @@ def execute(api: Node):
         api.send(INTERFACE_NAME, "ping", PING_SIZE, 0)
         nb_msg_sent += 1
         upt_end = upt + UPT_DURATION
-        code, data = api.receivet(INTERFACE_NAME, timeout=upt_end - api.read("clock"))
+        code, data = api.receivet(INTERFACE_NAME, timeout=max(0, upt_end - api.read("clock")))
         while data is not None:
             nb_msg_rcv += 1
             if data == "ping":
@@ -75,7 +67,7 @@ def execute(api: Node):
                     service_table[task_name] = [api.node_id, {}]
                     if len(tasks_list) == 0:
                         termination_list[api.node_id] = True
-            code, data = api.receivet(INTERFACE_NAME, timeout=upt_end - api.read("clock"))
+            code, data = api.receivet(INTERFACE_NAME, timeout=max(0, upt_end - api.read("clock")))
         upt_time += UPT_DURATION
     api.turn_off()
     node_cons.set_power(0)
