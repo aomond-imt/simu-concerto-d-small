@@ -40,7 +40,30 @@ def run_expe(current_param):
     IDLE_CONSO = 1.339
     STRESS_CONSO = 2.697
     n_nodes = len(ons_tasks)
-    B = np.full((n_nodes, n_nodes), BANDWIDTH)
+    if current_param["topology"] == "clique":
+        B = np.full((n_nodes, n_nodes), BANDWIDTH)
+    else:
+        n_nodes = 1 + current_param["nb_chains"]*(current_param["chains_length"]-1)
+        B = [
+            [BANDWIDTH, *[BANDWIDTH, *[0]*(current_param["chains_length"]-2)]*current_param["nb_chains"]]
+        ]
+        for c_num in range(current_param["nb_chains"]):
+            b = [0]*n_nodes
+            b[0] = BANDWIDTH
+            b[1 + c_num*(current_param["chains_length"]-1)] = BANDWIDTH
+            b[2 + c_num*(current_param["chains_length"]-1)] = BANDWIDTH
+            B.append(b)
+            for n_num in range(2, current_param["chains_length"]-1):
+                b = [0]*n_nodes
+                b[c_num*(current_param["chains_length"]-1) + n_num-1] = BANDWIDTH
+                b[c_num*(current_param["chains_length"]-1) + n_num] = BANDWIDTH
+                b[c_num*(current_param["chains_length"]-1) + n_num+1] = BANDWIDTH
+                B.append(b)
+            b = [0] * n_nodes
+            b[c_num * (current_param["chains_length"]-1) + (current_param["chains_length"]-1)] = BANDWIDTH
+            b[c_num * (current_param["chains_length"]-1) + (current_param["chains_length"]-2)] = BANDWIDTH
+            B.append(b)
+
     L = np.full((n_nodes, n_nodes), 0)
     smltr = esds.Simulator({"eth0": {"bandwidth": B, "latency": L, "is_wired": False}})
     termination_list = [False]*n_nodes
@@ -95,7 +118,7 @@ def main():
         "chains_length": [5],
         "is_pipeline": [False],
         "nb_chains": [3],
-        "topology": ["clique"],
+        "topology": ["star"],
         "id_run": [*range(10)]
     }
     sweeper = ParamSweeper(persistence_dir="sweeper", sweeps=sweep(parameters), save_sweeps=True)
