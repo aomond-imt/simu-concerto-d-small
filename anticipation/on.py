@@ -46,7 +46,7 @@ def execute(api: Node):
         api.turn_on()
         node_cons.set_power(IDLE_CONSO)
         upt_count += 1
-        api.send(INTERFACE_NAME, ("ping", None), PING_SIZE, 0)
+        api.send(INTERFACE_NAME, ("ping", (set(), set())), PING_SIZE, 0)
         nb_msg_sent += 1
         upt_end = upt + UPT_DURATION
 
@@ -68,62 +68,44 @@ def execute(api: Node):
         while data is not None:
             nb_msg_rcv += 1
             t, content = data
+            content_sent, content_asked = content
             api.log(f"content: {str(content)}")
             if api.args["type_comms"] == "pull":
                 if t == "ping":
                     contentsize = REQUEST_SIZE + len(content_to_fetch)*SERVICE_NAME_SIZE
-                    api.send(INTERFACE_NAME, ("ack", content_to_fetch), contentsize, 0)
+                    api.send(INTERFACE_NAME, ("ack", (set(), content_to_fetch)), contentsize, 0)
                 if t == "ack":
-                    content_to_send = {task_name: val for task_name, val in coordination_table.items() if task_name in content}
+                    content_to_send = {task_name: val for task_name, val in coordination_table.items() if task_name in content_asked}
                     content_size = REQUEST_SIZE + COORDINATION_TABLE_ENTRY_SIZE * len(content_to_send.keys())
                     content_size += len(content_to_fetch)*SERVICE_NAME_SIZE
                     api.send(INTERFACE_NAME, ("resp", (content_to_send, content_to_fetch)), content_size, 0)
-                    for task_name in content:
+                if t == "resp":
+                    content_to_send = {task_name: val for task_name, val in coordination_table.items() if task_name in content_asked}
+                    content_size = REQUEST_SIZE + COORDINATION_TABLE_ENTRY_SIZE * len(content_to_send.keys())
+                    api.send(INTERFACE_NAME, ("final", (content_to_send, set())), content_size, 0)
+                if t in ["ack", "resp"]:
+                    for task_name in content_asked:
                         if task_name not in coordination_table.keys():
                             content_to_fetch.add(task_name)
-                if t == "resp":
-                    content_sent, content_asked = content
+                if t in ["resp", "final"]:
                     coordination_table.update(content_sent)
                     for task_name in coordination_table.keys():
                         if task_name in content_to_fetch:
                             content_to_fetch.remove(task_name)
-                    content_to_send = {task_name: val for task_name, val in coordination_table.items() if task_name in content_asked}
-                    content_size = REQUEST_SIZE + COORDINATION_TABLE_ENTRY_SIZE * len(content_to_send.keys())
-                    api.send(INTERFACE_NAME, ("final", content_to_send), content_size, 0)
-                    for task_name in content_asked:
-                        if task_name not in coordination_table.keys():
+
+                while len(tasks_list) > 0 and all(dep in coordination_table.keys() for dep in tasks_list[0][2]):
+                    task_name, task_time, _ = tasks_list[0]
+                    node_cons.set_power(STRESS_CONSO)
+                    api.wait(task_time)
+                    node_cons.set_power(IDLE_CONSO)
+                    stress_time += task_time
+                    tasks_list.pop(0)
+                    coordination_table[task_name] = [api.node_id, {}]
+                    if len(tasks_list) == 0:
+                        termination_list[api.node_id] = True
+                    else:
+                        for task_name in tasks_list[0][2]:
                             content_to_fetch.add(task_name)
-                    while len(tasks_list) > 0 and all(dep in coordination_table.keys() for dep in tasks_list[0][2]):
-                        task_name, task_time, _ = tasks_list[0]
-                        node_cons.set_power(STRESS_CONSO)
-                        api.wait(task_time)
-                        node_cons.set_power(IDLE_CONSO)
-                        stress_time += task_time
-                        tasks_list.pop(0)
-                        coordination_table[task_name] = [api.node_id, {}]
-                        if len(tasks_list) == 0:
-                            termination_list[api.node_id] = True
-                        else:
-                            for task_name in tasks_list[0][2]:
-                                content_to_fetch.add(task_name)
-                if t == "final":
-                    coordination_table.update(content)
-                    for task_name in coordination_table.keys():
-                        if task_name in content_to_fetch:
-                            content_to_fetch.remove(task_name)
-                    while len(tasks_list) > 0 and all(dep in coordination_table.keys() for dep in tasks_list[0][2]):
-                        task_name, task_time, _ = tasks_list[0]
-                        node_cons.set_power(STRESS_CONSO)
-                        api.wait(task_time)
-                        node_cons.set_power(IDLE_CONSO)
-                        stress_time += task_time
-                        tasks_list.pop(0)
-                        coordination_table[task_name] = [api.node_id, {}]
-                        if len(tasks_list) == 0:
-                            termination_list[api.node_id] = True
-                        else:
-                            for task_name in tasks_list[0][2]:
-                                content_to_fetch.add(task_name)
             code, data = api.receivet(INTERFACE_NAME, timeout=max(0, upt_end - api.read("clock")))
         upt_time += UPT_DURATION
     api.turn_off()
