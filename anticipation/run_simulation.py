@@ -12,9 +12,10 @@ from execo_engine import ParamSweeper, sweep
 
 def run_expe(current_param):
     ons_tasks = [
-        [("run0_0", 10, ("run1_0",)), ("run0_1", 10, ("run1_1",))],
-        [("run1_0", 10, ()), ("run1_1", 10, ())],
+        [(f"run{n_num}_{p_num}", 10, (f"run{n_num+1}_{p_num}",)) for p_num in range(current_param["nb_place"])]
+        for n_num in range(current_param["chains_length"] - 1)
     ]
+    ons_tasks.append([(f"run{current_param['chains_length']-1}_{p_num}", 10, ()) for p_num in range(current_param["nb_place"])])
 
     # Setup simulator
     BANDWIDTH = 50_000
@@ -28,7 +29,12 @@ def run_expe(current_param):
     with open(f"/home/aomond/leverages/uptimes_schedules/{current_param['id_run']}-60.json") as f:
         uptimes_schedules = json.load(f)
     for _ in range(n_nodes):
-        smltr.create_node("on", interfaces=["eth0"], args={"termination_list": termination_list, "ons_tasks": ons_tasks, "uptimes_schedules": uptimes_schedules})
+        smltr.create_node("on", interfaces=["eth0"], args={
+            "termination_list": termination_list,
+            "ons_tasks": ons_tasks,
+            "uptimes_schedules": uptimes_schedules,
+            "type_comms": current_param["type_comms"]
+        })
 
     # Run simulation
     results_log_path = f"/tmp/{time.time_ns()}.txt"
@@ -81,10 +87,10 @@ def run_expe(current_param):
 def main():
     # Setup parameters
     parameters = {
-        "type_comms": ["push"],
-        "nb_place": [2],
+        "type_comms": ["push", "pull"],
+        "nb_place": [2, 3, 4, 5],
         "deps_pos": ["place"],  # comp, place, trans
-        "chains_length": [2],
+        "chains_length": [2, 3, 4, 5],
         "nb_chains": [1],
         "topology": ["clique"],
         "id_run": [*range(10)]

@@ -3,7 +3,8 @@ library("dplyr")
 
 d <- read.csv(glue::glue("results.csv"))
 d<-d %>% filter(id_run == 0)
-ggplot(d, aes(x=nb_place, y=dynamic, label=sprintf("%0.2f", dynamic))) +
+d<-d %>% filter(nb_place == 5)
+ggplot(d, aes(x=chains_length, y=dynamic, fill=type_comms, label=sprintf("%0.2f", dynamic))) +
     geom_bar(color="black", stat = "identity", position = "dodge") +
     geom_text(aes(y=min(dynamic)/2), fill="white", fontface="bold", position=position_dodge(width=0.9)) +
     ylab(glue::glue("Accumulated energy consumption (J)")) +
