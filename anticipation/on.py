@@ -53,6 +53,7 @@ def execute(api: Node):
         while data is not None:
             nb_msg_rcv += 1
             t, content = data
+            api.log(f"content: {str(content)}")
             if t == "ping":
                 if api.args["type_comms"] == "push":
                     data_to_send = service_table
@@ -61,6 +62,8 @@ def execute(api: Node):
                     for task_name in content:
                         if task_name not in service_table.keys():
                             data_to_fetch.add(task_name)
+                api.log(f"data_to_send: {str(data_to_send)}")
+                api.log(f"data_to_fetch: {str(data_to_fetch)}")
                 content_size = REQUEST_SIZE + SERVICE_TABLE_ENTRY_SIZE * len(data_to_send.keys())
                 api.send(INTERFACE_NAME, ("resp", data_to_send), content_size, 0)
                 nb_msg_sent += 1
@@ -69,6 +72,7 @@ def execute(api: Node):
                 for task_name in service_table.keys():
                     if task_name in data_to_fetch:
                         data_to_fetch.remove(task_name)
+                api.log(f"service_table: {str(service_table)}")
                 if len(tasks_list) > 0 and all(dep in service_table.keys() for dep in tasks_list[0][2]):
                     task_name, task_time, _ = tasks_list[0]
                     node_cons.set_power(STRESS_CONSO)

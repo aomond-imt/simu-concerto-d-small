@@ -12,10 +12,10 @@ from execo_engine import ParamSweeper, sweep
 
 def run_expe(current_param):
     ons_tasks = [
-        [(f"run{n_num}_{p_num}", 10, (f"run{n_num+1}_{p_num}",)) for p_num in range(current_param["nb_place"])]
+        [(f"run{n_num}_{p_num}", 10, (f"run{n_num+1}_{p_num}",)) for p_num in range(current_param["nb_deps_seq"])]
         for n_num in range(current_param["chains_length"] - 1)
     ]
-    ons_tasks.append([(f"run{current_param['chains_length']-1}_{p_num}", 10, ()) for p_num in range(current_param["nb_place"])])
+    ons_tasks.append([(f"run{current_param['chains_length']-1}_{p_num}", 10, ()) for p_num in range(current_param["nb_deps_seq"])])
 
     # Setup simulator
     BANDWIDTH = 50_000
@@ -66,29 +66,14 @@ def run_expe(current_param):
     metrics_per_nodes["dynamic"] = metrics_per_nodes["stress_time"]["total"]*STRESS_CONSO + metrics_per_nodes["comms_cons"]["total"]
     metrics_per_nodes["duration"] = metrics_per_nodes["time"]["total"]
 
-    # Print metrics
-    # for k, m in metrics_per_nodes.items():
-    #     print(k, m)
-
-    # Save into csv
-    filename = "results.csv"
-    with open(filename, "a") as f:
-        csvwriter = csv.writer(f, delimiter=",")
-        if os.stat(filename).st_size == 0:
-            csvwriter.writerow(["static", "dynamic", "duration", *current_param.keys()])
-        csvwriter.writerow([
-            round(metrics_per_nodes["static"], 2),
-            round(metrics_per_nodes["dynamic"], 2),
-            round(metrics_per_nodes["duration"], 2),
-            *current_param.values()
-        ])
+    return metrics_per_nodes
 
 
 def main():
     # Setup parameters
     parameters = {
         "type_comms": ["push", "pull"],
-        "nb_place": [2, 3, 4, 5],
+        "nb_deps_seq": [2, 3, 4, 5],
         "deps_pos": ["place"],  # comp, place, trans
         "chains_length": [2, 3, 4, 5],
         "nb_chains": [1],
@@ -101,9 +86,27 @@ def main():
     while current_param is not None:
         try:
             s = time.perf_counter()
-            run_expe(current_param)
+            metrics_per_nodes = run_expe(current_param)
             sweeper.done(current_param)
             print(f"{current_param} done in: {(time.perf_counter() - s):.2f}")
+
+            # Print metrics
+            # for k, m in metrics_per_nodes.items():
+            #     print(k, m)
+
+            # Save into csv
+            filename = "results.csv"
+            with open(filename, "a") as f:
+                csvwriter = csv.writer(f, delimiter=",")
+                if os.stat(filename).st_size == 0:
+                    csvwriter.writerow(["static", "dynamic", "duration", *current_param.keys()])
+                csvwriter.writerow([
+                    round(metrics_per_nodes["static"], 2),
+                    round(metrics_per_nodes["dynamic"], 2),
+                    round(metrics_per_nodes["duration"], 2),
+                    *current_param.values()
+                ])
+
         except Exception as e:
             traceback.print_exc()
             sweeper.skip(current_param)
