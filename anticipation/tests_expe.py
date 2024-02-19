@@ -9,8 +9,8 @@ class Pull:
         parameters = {
             "type_comms": "pull",
             "nb_deps_seq": 1,
-            "deps_pos": "place",
             "chains_length": 2,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -23,8 +23,8 @@ class Pull:
         parameters = {
             "type_comms": "pull",
             "nb_deps_seq": 2,
-            "deps_pos": "place",
             "chains_length": 2,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -38,8 +38,8 @@ class Pull:
         parameters = {
             "type_comms": "pull",
             "nb_deps_seq": 3,
-            "deps_pos": "place",
             "chains_length": 2,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -52,8 +52,8 @@ class Pull:
         parameters = {
             "type_comms": "pull",
             "nb_deps_seq": 1,
-            "deps_pos": "place",
             "chains_length": 5,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -68,8 +68,8 @@ class Push:
         parameters = {
             "type_comms": "push",
             "nb_deps_seq": 1,
-            "deps_pos": "place",
             "chains_length": 2,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -82,8 +82,8 @@ class Push:
         parameters = {
             "type_comms": "push",
             "nb_deps_seq": 5,
-            "deps_pos": "place",
             "chains_length": 2,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -96,8 +96,8 @@ class Push:
         parameters = {
             "type_comms": "push",
             "nb_deps_seq": 1,
-            "deps_pos": "place",
             "chains_length": 5,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -112,8 +112,8 @@ class PullAnticipation:
         parameters = {
             "type_comms": "pull_anticipation",
             "nb_deps_seq": 1,
-            "deps_pos": "place",
             "chains_length": 2,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -126,8 +126,8 @@ class PullAnticipation:
         parameters = {
             "type_comms": "pull_anticipation",
             "nb_deps_seq": 5,
-            "deps_pos": "place",
             "chains_length": 2,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -140,8 +140,8 @@ class PullAnticipation:
         parameters = {
             "type_comms": "pull_anticipation",
             "nb_deps_seq": 3,
-            "deps_pos": "place",
             "chains_length": 5,
+            "is_pipeline": True,
             "nb_chains": 1,
             "topology": "clique",
             "id_run": 0
@@ -154,6 +154,12 @@ class PullAnticipation:
 if __name__ == "__main__":
     results = []
     with ProcessPoolExecutor(max_workers=3) as executor:
+        for k, v in inspect.getmembers(Pull(), predicate=inspect.ismethod):
+            print(k)
+            results.append(executor.submit(v))
+        for k, v in inspect.getmembers(Push(), predicate=inspect.ismethod):
+            print(k)
+            results.append(executor.submit(v))
         for k, v in inspect.getmembers(PullAnticipation(), predicate=inspect.ismethod):
             print(k)
             results.append(executor.submit(v))

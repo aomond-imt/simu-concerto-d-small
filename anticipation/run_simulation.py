@@ -12,11 +12,28 @@ from execo_engine import ParamSweeper, sweep
 
 def run_expe(current_param):
     tt = 5
-    ons_tasks = [
-        [(f"run{n_num}_{p_num}", tt, (f"run{n_num+1}_{p_num}",)) for p_num in range(current_param["nb_deps_seq"])]
-        for n_num in range(current_param["chains_length"] - 1)
-    ]
-    ons_tasks.append([(f"run{current_param['chains_length']-1}_{p_num}", tt, ()) for p_num in range(current_param["nb_deps_seq"])])
+    if current_param["is_pipeline"]:
+        ons_tasks = [
+            [(f"run0_{p_num}", tt, tuple(f"run{1 + (current_param['chains_length']-1)*n_num}_{p_num}" for n_num in range(current_param["nb_chains"]))) for p_num in range(current_param["nb_deps_seq"])]
+        ]
+        for c_num in range(current_param["nb_chains"]):
+            for n_num in range(1, current_param["chains_length"] - 1):
+                num = n_num+c_num*(current_param['chains_length'] - 1)
+                ons_tasks.append([
+                    (f"run{num}_{p_num}", tt, (f"run{num+1}_{p_num}",)) for p_num in range(current_param["nb_deps_seq"])
+                ])
+            ons_tasks.append([(f"run{(current_param['chains_length'] - 1)*(c_num+1)}_{p_num}", tt, ()) for p_num in range(current_param["nb_deps_seq"])])
+    else:
+        ons_tasks = [
+            [(f"run0_{p_num}", tt, tuple(f"run{n_num*(current_param['chains_length']-1) + nn_num}_{p_num}" for n_num in range(current_param["nb_chains"]) for nn_num in range(1, current_param["chains_length"]))) for p_num in range(current_param["nb_deps_seq"])]
+        ]
+        for c_num in range(current_param["nb_chains"]):
+            for n_num in range(1, current_param["chains_length"] - 1):
+                num = n_num+c_num*(current_param['chains_length'] - 1)
+                ons_tasks.append([
+                    (f"run{num}_{p_num}", tt, ()) for p_num in range(current_param["nb_deps_seq"])
+                ])
+            ons_tasks.append([(f"run{(current_param['chains_length'] - 1)*(c_num+1)}_{p_num}", tt, ()) for p_num in range(current_param["nb_deps_seq"])])
 
     # Setup simulator
     BANDWIDTH = 50_000
@@ -74,10 +91,10 @@ def main():
     # Setup parameters
     parameters = {
         "type_comms": ["push", "pull"],
-        "nb_deps_seq": [2, 3, 4, 5],
-        "deps_pos": ["place"],  # comp, place, trans
-        "chains_length": [2, 3, 4, 5],
-        "nb_chains": [1],
+        "nb_deps_seq": [4],
+        "chains_length": [5],
+        "is_pipeline": [False],
+        "nb_chains": [3],
         "topology": ["clique"],
         "id_run": [*range(10)]
     }
