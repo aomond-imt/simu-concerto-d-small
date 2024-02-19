@@ -113,12 +113,12 @@ def run_expe(current_param):
 def main():
     # Setup parameters
     parameters = {
-        "type_comms": ["push", "pull"],
-        "nb_deps_seq": [4],
-        "chains_length": [5],
-        "is_pipeline": [False],
-        "nb_chains": [3],
-        "topology": ["star"],
+        "type_comms": ["push", "pull", "pull_anticipation"],
+        "nb_deps_seq": [1, 3, 5],
+        "chains_length": [1, 3, 5],
+        "is_pipeline": [True, False],
+        "nb_chains": [1, 3],
+        "topology": ["clique", "star"],
         "id_run": [*range(10)]
     }
     sweeper = ParamSweeper(persistence_dir="sweeper", sweeps=sweep(parameters), save_sweeps=True)
@@ -130,10 +130,6 @@ def main():
             metrics_per_nodes = run_expe(current_param)
             sweeper.done(current_param)
             print(f"{current_param} done in: {(time.perf_counter() - s):.2f}")
-
-            # Print metrics
-            # for k, m in metrics_per_nodes.items():
-            #     print(k, m)
 
             # Save into csv
             filename = "results.csv"
