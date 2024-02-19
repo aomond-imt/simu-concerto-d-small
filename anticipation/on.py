@@ -32,6 +32,9 @@ def execute(api: Node):
     termination_list = api.args["termination_list"]
     uptimes_schedules = api.args["uptimes_schedules"][api.node_id]
     content_to_fetch = set(d for d in tasks_list[0][2])
+    if api.args["type_comms"] == "pull_anticipation":
+        for i in range(1, len(tasks_list)):
+            content_to_fetch.update(set(d for d in tasks_list[i][2]))
     for upt in uptimes_schedules:
         # Sleeping period
         api.turn_off()
@@ -67,7 +70,7 @@ def execute(api: Node):
         code, data = api.receivet(INTERFACE_NAME, timeout=max(0, upt_end - api.read("clock")))
         while data is not None:
             nb_msg_rcv += 1
-            if api.args["type_comms"] == "pull":
+            if "pull" in api.args["type_comms"]:
                 t, content = data
                 content_sent, content_asked = content
                 api.log(f"content: {str(content)}")

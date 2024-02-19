@@ -107,10 +107,54 @@ class Push:
         print("passed")
 
 
+class PullAnticipation:
+    def test_pull_anticipation_nb_deps_seq_1(self):
+        parameters = {
+            "type_comms": "pull_anticipation",
+            "nb_deps_seq": 1,
+            "deps_pos": "place",
+            "chains_length": 2,
+            "nb_chains": 1,
+            "topology": "clique",
+            "id_run": 0
+        }
+        metrics_per_node = run_expe(parameters)
+        assert metrics_per_node["upt_count"]["total"] == 25, metrics_per_node["upt_count"]["total"]
+        print("passed")
+
+    def test_pull_anticipation_nb_deps_seq_5(self):
+        parameters = {
+            "type_comms": "pull_anticipation",
+            "nb_deps_seq": 5,
+            "deps_pos": "place",
+            "chains_length": 2,
+            "nb_chains": 1,
+            "topology": "clique",
+            "id_run": 0
+        }
+        metrics_per_node = run_expe(parameters)
+        assert metrics_per_node["upt_count"]["total"] == 25, metrics_per_node["upt_count"]["total"]
+        print("passed")
+
+    def test_pull_anticipation_chains_length_5(self):
+        parameters = {
+            "type_comms": "pull_anticipation",
+            "nb_deps_seq": 3,
+            "deps_pos": "place",
+            "chains_length": 5,
+            "nb_chains": 1,
+            "topology": "clique",
+            "id_run": 0
+        }
+        metrics_per_node = run_expe(parameters)
+        assert metrics_per_node["upt_count"]["total"] == 25, metrics_per_node["upt_count"]["total"]
+        print("passed")
+
+
 if __name__ == "__main__":
     results = []
     with ProcessPoolExecutor(max_workers=3) as executor:
-        for k, v in inspect.getmembers(Push(), predicate=inspect.ismethod):
+        for k, v in inspect.getmembers(PullAnticipation(), predicate=inspect.ismethod):
             print(k)
             results.append(executor.submit(v))
 
