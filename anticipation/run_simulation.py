@@ -43,7 +43,6 @@ def run_expe(current_param):
     if current_param["topology"] == "clique":
         B = np.full((n_nodes, n_nodes), BANDWIDTH)
     else:
-        n_nodes = 1 + current_param["nb_chains"]*(current_param["chains_length"]-1)
         B = [
             [BANDWIDTH, *[BANDWIDTH, *[0]*(current_param["chains_length"]-2)]*current_param["nb_chains"]]
         ]
@@ -63,7 +62,7 @@ def run_expe(current_param):
             b[c_num * (current_param["chains_length"]-1) + (current_param["chains_length"]-1)] = BANDWIDTH
             b[c_num * (current_param["chains_length"]-1) + (current_param["chains_length"]-2)] = BANDWIDTH
             B.append(b)
-
+        B = np.asarray(B)
     L = np.full((n_nodes, n_nodes), 0)
     smltr = esds.Simulator({"eth0": {"bandwidth": B, "latency": L, "is_wired": False}})
     termination_list = [False]*n_nodes
@@ -114,11 +113,11 @@ def main():
     # Setup parameters
     parameters = {
         "type_comms": ["push", "pull", "pull_anticipation"],
-        "nb_deps_seq": [1, 3, 5],
-        "chains_length": [1, 3, 5],
+        "nb_deps_seq": [3, 5],
+        "chains_length": [3, 5],
         "is_pipeline": [True, False],
         "nb_chains": [1, 3],
-        "topology": ["clique", "star"],
+        "topology": ["star"],
         "id_run": [*range(10)]
     }
     sweeper = ParamSweeper(persistence_dir="sweeper", sweeps=sweep(parameters), save_sweeps=True)
