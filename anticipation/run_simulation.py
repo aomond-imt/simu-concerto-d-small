@@ -67,7 +67,7 @@ def run_expe(current_param):
     L = np.full((n_nodes, n_nodes), 0)
     smltr = esds.Simulator({"eth0": {"bandwidth": B, "latency": L, "is_wired": False}})
     termination_list = [False]*n_nodes
-    with open(f"/home/aomond/leverages/uptimes_schedules/{current_param['id_run']}-60.json") as f:
+    with open(f"{os.environ['HOME']}/leverages/uptimes_schedules/{current_param['id_run']}-60.json") as f:
         uptimes_schedules = json.load(f)
     for _ in range(n_nodes):
         smltr.create_node("on", interfaces=["eth0"], args={
