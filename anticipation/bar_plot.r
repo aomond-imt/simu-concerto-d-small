@@ -1,8 +1,7 @@
 library("ggplot2")
 library("dplyr")
 
-d <- read.csv(glue::glue("results.csv"))
-d<-d %>% filter(id_run == 0)
+d <- read.csv(glue::glue("aggregated_results.csv"))
 d<-d %>% filter(nb_deps_seq == 5)
 ggplot(d, aes(x=chains_length, y=dynamic, fill=type_comms, label=sprintf("%0.2f", dynamic))) +
     geom_bar(color="black", stat = "identity", position = "dodge") +
