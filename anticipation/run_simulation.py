@@ -11,11 +11,12 @@ from execo_engine import ParamSweeper, sweep
 
 
 def run_expe(current_param):
+    tt = 5
     ons_tasks = [
-        [(f"run{n_num}_{p_num}", 10, (f"run{n_num+1}_{p_num}",)) for p_num in range(current_param["nb_deps_seq"])]
+        [(f"run{n_num}_{p_num}", tt, (f"run{n_num+1}_{p_num}",)) for p_num in range(current_param["nb_deps_seq"])]
         for n_num in range(current_param["chains_length"] - 1)
     ]
-    ons_tasks.append([(f"run{current_param['chains_length']-1}_{p_num}", 10, ()) for p_num in range(current_param["nb_deps_seq"])])
+    ons_tasks.append([(f"run{current_param['chains_length']-1}_{p_num}", tt, ()) for p_num in range(current_param["nb_deps_seq"])])
 
     # Setup simulator
     BANDWIDTH = 50_000
