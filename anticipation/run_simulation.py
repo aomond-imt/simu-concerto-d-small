@@ -117,7 +117,7 @@ def main():
         "chains_length": [3, 5],
         "is_pipeline": [True, False],
         "nb_chains": [1, 3],
-        "topology": ["star"],
+        "topology": ["clique", "star"],
         "id_run": [*range(10)]
     }
     sweeper = ParamSweeper(persistence_dir="sweeper", sweeps=sweep(parameters), save_sweeps=True)
