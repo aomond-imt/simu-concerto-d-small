@@ -20,9 +20,9 @@ with open("results.csv") as f:
         for key in vals_to_aggregate.keys():
             assert len(vals_to_aggregate[key]["static"]) == len(vals_to_aggregate[key]["dynamic"]) == len(vals_to_aggregate[key]["duration"])
             csvwriter.writerow([
-                round(np.asarray(vals_to_aggregate[key]["static"]).mean(), 2), round(np.asarray(vals_to_aggregate[key]["static"]).std(), 2),
+                round(np.asarray(vals_to_aggregate[key]["static"]).mean()/1000, 2), round(np.asarray(vals_to_aggregate[key]["static"]).std()/1000, 2),
                 round(np.asarray(vals_to_aggregate[key]["dynamic"]).mean(), 2), round(np.asarray(vals_to_aggregate[key]["dynamic"]).std(), 2),
-                round(np.asarray(vals_to_aggregate[key]["duration"]).mean(), 2), round(np.asarray(vals_to_aggregate[key]["duration"]).std(), 2),
+                round(np.asarray(vals_to_aggregate[key]["duration"]).mean()/3600, 2), round(np.asarray(vals_to_aggregate[key]["duration"]).std()/3600, 2),
                 *key,
                 len(vals_to_aggregate[key]["static"])
             ])
