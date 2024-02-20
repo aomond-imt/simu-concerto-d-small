@@ -114,7 +114,7 @@ def main():
     parameters = {
         "type_comms": ["push", "pull_anticipation"],
         "nb_deps_seq": [10],
-        "chains_length": [2, 4, 6],
+        "chains_length": [3, 5, 7],  # min > 3
         "is_pipeline": [True, False],
         "nb_chains": [1, 3, 5],
         "topology": ["clique", "star"],
