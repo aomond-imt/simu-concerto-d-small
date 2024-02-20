@@ -34,7 +34,7 @@ class Pull:
         print("passed")
 
     def test_pull_nb_deps_seq_3(self):
-        exit()
+        # exit()
         parameters = {
             "type_comms": "pull",
             "nb_deps_seq": 3,

@@ -15,7 +15,7 @@ SERVICE_NAME_SIZE = 16
 NODE_ID_SIZE = 16
 EXPORTED_VALUES_SIZE = 1_000  # High value to cover worst cases
 COORDINATION_TABLE_ENTRY_SIZE = SERVICE_NAME_SIZE + NODE_ID_SIZE + EXPORTED_VALUES_SIZE
-REQUEST_SIZE = 257
+REQUEST_SIZE = 257 + NODE_ID_SIZE
 
 
 def execute(api: Node):
@@ -27,6 +27,7 @@ def execute(api: Node):
     # Metrics
     upt_count, sleep_time, upt_time, stress_time, nb_msg_sent, nb_msg_rcv = 0, 0, 0, 0, 0, 0
 
+    exchanged_data = {}
     coordination_table = {}
     tasks_list = api.args["ons_tasks"][api.node_id]
     termination_list = api.args["termination_list"]
@@ -49,7 +50,7 @@ def execute(api: Node):
         api.turn_on()
         node_cons.set_power(IDLE_CONSO)
         upt_count += 1
-        api.send(INTERFACE_NAME, ("ping", (set(), set())), PING_SIZE, 0)
+        api.send(INTERFACE_NAME, (api.node_id, "ping", (set(), set())), PING_SIZE, 0)
         nb_msg_sent += 1
         upt_end = upt + UPT_DURATION
 
@@ -64,34 +65,38 @@ def execute(api: Node):
             if len(tasks_list) == 0:
                 termination_list[api.node_id] = True
             else:
-                # TODO: fix, pull_anticipation shouldn't add more tasks here
-                for task_name in tasks_list[0][2]:
-                    content_to_fetch.add(task_name)
+                if api.args["type_comms"] != "pull_anticipation":
+                    for task_name in tasks_list[0][2]:
+                        content_to_fetch.add(task_name)
 
         # TODO routing ?
         code, data = api.receivet(INTERFACE_NAME, timeout=max(0, upt_end - api.read("clock")))
         while data is not None:
             nb_msg_rcv += 1
             if "pull" in api.args["type_comms"]:
-                t, content = data
+                node_id, t, content = data
                 content_sent, content_asked = content
                 api.log(f"content: {str(content)}")
                 if t == "ping":
-                    contentsize = REQUEST_SIZE + len(content_to_fetch)*SERVICE_NAME_SIZE
-                    api.send(INTERFACE_NAME, ("ack", (set(), content_to_fetch)), contentsize, 0)
+                    content_to_ask = set(c for c in content_to_fetch if c not in exchanged_data.setdefault(node_id, set()))
+                    contentsize = REQUEST_SIZE + len(content_to_ask)*SERVICE_NAME_SIZE
+                    api.send(INTERFACE_NAME, (api.node_id, "ack", (set(), content_to_ask)), contentsize, 0)
+                    exchanged_data.setdefault(node_id, set()).update(content_to_ask)
                 if t == "ack":
                     content_to_send = {task_name: val for task_name, val in coordination_table.items() if task_name in content_asked}
                     content_size = REQUEST_SIZE + COORDINATION_TABLE_ENTRY_SIZE * len(content_to_send.keys())
-                    content_size += len(content_to_fetch)*SERVICE_NAME_SIZE
-                    api.send(INTERFACE_NAME, ("resp", (content_to_send, content_to_fetch)), content_size, 0)
+                    content_to_ask = set(c for c in content_to_fetch if c not in exchanged_data.setdefault(node_id, set()))
+                    content_size += len(content_to_ask)*SERVICE_NAME_SIZE
+                    api.send(INTERFACE_NAME, (api.node_id, "resp", (content_to_send, content_to_ask)), content_size, 0)
                 if t == "resp":
                     content_to_send = {task_name: val for task_name, val in coordination_table.items() if task_name in content_asked}
                     content_size = REQUEST_SIZE + COORDINATION_TABLE_ENTRY_SIZE * len(content_to_send.keys())
-                    api.send(INTERFACE_NAME, ("final", (content_to_send, set())), content_size, 0)
+                    api.send(INTERFACE_NAME, (api.node_id, "final", (content_to_send, set())), content_size, 0)
                 if t in ["ack", "resp"]:
                     for task_name in content_asked:
                         if task_name not in coordination_table.keys():
                             content_to_fetch.add(task_name)
+                    exchanged_data.setdefault(node_id, set()).update(content_asked)
                 if t in ["resp", "final"]:
                     coordination_table.update(content_sent)
                     for task_name in coordination_table.keys():
@@ -100,12 +105,15 @@ def execute(api: Node):
 
             # TODO Trace nodes id where data was sent AND received, same for pull
             if api.args["type_comms"] == "push":
-                t, content = data
+                node_id, t, content_sent = data
                 if t in ["ping", "ack"]:
-                    contentsize = REQUEST_SIZE + COORDINATION_TABLE_ENTRY_SIZE * len(coordination_table.keys())
-                    api.send(INTERFACE_NAME, (["ack", "final"][t == "ack"], coordination_table), contentsize, 0)
+                    content_to_send = {task_name: val for task_name, val in coordination_table.items() if task_name not in exchanged_data.setdefault(node_id, set())}
+                    contentsize = REQUEST_SIZE + COORDINATION_TABLE_ENTRY_SIZE * len(content_to_send.keys())
+                    api.send(INTERFACE_NAME, (api.node_id, ["ack", "final"][t == "ack"], content_to_send), contentsize, 0)
+                    exchanged_data.setdefault(node_id, set()).update(content_to_send.keys())
                 if t in ["ack", "final"]:
-                    coordination_table.update(content)
+                    exchanged_data.setdefault(node_id, set()).update(content_sent.keys())
+                    coordination_table.update(content_sent)
 
             while len(tasks_list) > 0 and all(dep in coordination_table.keys() for dep in tasks_list[0][2]):
                 task_name, task_time, _ = tasks_list[0]
