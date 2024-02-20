@@ -112,12 +112,13 @@ def run_expe(current_param):
 def main():
     # Setup parameters
     parameters = {
-        "type_comms": ["push", "pull", "pull_anticipation"],
-        "nb_deps_seq": [3, 5],
-        "chains_length": [3, 5],
+        "type_comms": ["push", "pull_anticipation"],
+        "nb_deps_seq": [10],
+        "chains_length": [2, 4, 6],
         "is_pipeline": [True, False],
-        "nb_chains": [1, 3],
+        "nb_chains": [1, 3, 5],
         "topology": ["clique", "star"],
+        "routing": [False],
         "id_run": [*range(10)]
     }
     sweeper = ParamSweeper(persistence_dir="sweeper", sweeps=sweep(parameters), save_sweeps=True)
@@ -131,7 +132,7 @@ def main():
             print(f"{current_param} done in: {(time.perf_counter() - s):.2f}")
 
             # Save into csv
-            filename = "results.csv"
+            filename = "results_fixed_epidemic.csv"
             with open(filename, "a") as f:
                 csvwriter = csv.writer(f, delimiter=",")
                 if os.stat(filename).st_size == 0:
