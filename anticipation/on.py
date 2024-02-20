@@ -64,9 +64,11 @@ def execute(api: Node):
             if len(tasks_list) == 0:
                 termination_list[api.node_id] = True
             else:
+                # TODO: fix, pull_anticipation shouldn't add more tasks here
                 for task_name in tasks_list[0][2]:
                     content_to_fetch.add(task_name)
 
+        # TODO routing ?
         code, data = api.receivet(INTERFACE_NAME, timeout=max(0, upt_end - api.read("clock")))
         while data is not None:
             nb_msg_rcv += 1
@@ -96,6 +98,7 @@ def execute(api: Node):
                         if task_name in content_to_fetch:
                             content_to_fetch.remove(task_name)
 
+            # TODO Trace nodes id where data was sent AND received, same for pull
             if api.args["type_comms"] == "push":
                 t, content = data
                 if t in ["ping", "ack"]:
@@ -115,6 +118,7 @@ def execute(api: Node):
                 if len(tasks_list) == 0:
                     termination_list[api.node_id] = True
                 else:
+                    # TODO same
                     for task_name in tasks_list[0][2]:
                         content_to_fetch.add(task_name)
             code, data = api.receivet(INTERFACE_NAME, timeout=max(0, upt_end - api.read("clock")))

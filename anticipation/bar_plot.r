@@ -4,8 +4,8 @@ library("dplyr")
 d <- read.csv(glue::glue("aggregated_results.csv"))
 d<-d %>% filter(nb_deps_seq == 5)
 # d<-d %>% filter(is_pipeline == "False")
-d<-d %>% filter(nb_chains == 1)
-d<-d %>% filter(topology == "star")
+d<-d %>% filter(nb_chains == 3)
+d<-d %>% filter(topology == "clique")
 dodge <- 1.9
 mean <- d$dynamic_mean
 std <- d$dynamic_std
@@ -20,7 +20,7 @@ ggplot(d, aes(x=chains_length, y=mean, fill=type_comms, label=sprintf("%0.2f", m
     # ylab(glue::glue("Duration (h)")) +
     theme(axis.text.y = element_text()) +
     xlab(element_blank()) +
-    facet_wrap(~ is_pipeline)
+    facet_wrap(~ is_pipeline) +
     labs(fill="Service topology:") +
     theme(legend.position="top", legend.text=element_text(size=15), legend.title=element_text(size=15), axis.text=element_text(size=15), axis.title.y=element_text(size=15, vjust=2.5))
 ggsave(glue::glue("plots/plot.pdf"), width=9, height=6)
