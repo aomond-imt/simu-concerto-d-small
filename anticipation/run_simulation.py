@@ -128,20 +128,22 @@ def main():
         try:
             s = time.perf_counter()
             metrics_per_nodes = run_expe(current_param)
+            simu_time = time.perf_counter() - s
+            print(f"{current_param} done in: {simu_time:.2f}")
             sweeper.done(current_param)
-            print(f"{current_param} done in: {(time.perf_counter() - s):.2f}")
 
             # Save into csv
             filename = "results_fixed_epidemic.csv"
             with open(filename, "a") as f:
                 csvwriter = csv.writer(f, delimiter=",")
                 if os.stat(filename).st_size == 0:
-                    csvwriter.writerow(["static", "dynamic", "duration", *current_param.keys()])
+                    csvwriter.writerow(["static", "dynamic", "duration", *current_param.keys(), "simu_time"])
                 csvwriter.writerow([
                     round(metrics_per_nodes["static"], 2),
                     round(metrics_per_nodes["dynamic"], 2),
                     round(metrics_per_nodes["duration"], 2),
-                    *current_param.values()
+                    *current_param.values(),
+                    simu_time
                 ])
 
         except Exception as e:

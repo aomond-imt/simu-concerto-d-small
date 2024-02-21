@@ -13,7 +13,7 @@ COMMS_CONSO = 0.16
 # DATA SIZE
 SERVICE_NAME_SIZE = 16
 NODE_ID_SIZE = 16
-EXPORTED_VALUES_SIZE = 1_000  # High value to cover worst cases
+EXPORTED_VALUES_SIZE = 100
 COORDINATION_TABLE_ENTRY_SIZE = SERVICE_NAME_SIZE + NODE_ID_SIZE + EXPORTED_VALUES_SIZE
 REQUEST_SIZE = 257 + NODE_ID_SIZE
 
@@ -78,7 +78,8 @@ def execute(api: Node):
                 content_sent, content_asked = content
                 api.log(f"content: {str(content)}")
                 if t == "ping":
-                    # TODO voir pour redondances
+                    # TODO voir pour redondances du ping
+                    # TODO voir pour overhearing requests (même si ça arrivera quasi pas)
                     # content_to_ask = set(c for c in content_to_fetch if c not in exchanged_data.setdefault(node_id, set()))
                     content_to_ask = content_to_fetch
                     contentsize = REQUEST_SIZE + len(content_to_ask)*SERVICE_NAME_SIZE
@@ -107,6 +108,7 @@ def execute(api: Node):
 
             if api.args["type_comms"] == "push":
                 node_id, t, content_sent = data
+                api.log(f"{t}, content: {str(content_sent)}")
                 if t in ["ping", "ack"]:
                     content_to_send = {task_name: val for task_name, val in coordination_table.items() if task_name not in exchanged_data.setdefault(node_id, set())}
                     contentsize = REQUEST_SIZE + COORDINATION_TABLE_ENTRY_SIZE * len(content_to_send.keys())
