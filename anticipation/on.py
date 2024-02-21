@@ -78,7 +78,9 @@ def execute(api: Node):
                 content_sent, content_asked = content
                 api.log(f"content: {str(content)}")
                 if t == "ping":
-                    content_to_ask = set(c for c in content_to_fetch if c not in exchanged_data.setdefault(node_id, set()))
+                    # TODO voir pour redondances
+                    # content_to_ask = set(c for c in content_to_fetch if c not in exchanged_data.setdefault(node_id, set()))
+                    content_to_ask = content_to_fetch
                     contentsize = REQUEST_SIZE + len(content_to_ask)*SERVICE_NAME_SIZE
                     api.send(INTERFACE_NAME, (api.node_id, "ack", (set(), content_to_ask)), contentsize, 0)
                     exchanged_data.setdefault(node_id, set()).update(content_to_ask)
@@ -103,7 +105,6 @@ def execute(api: Node):
                         if task_name in content_to_fetch:
                             content_to_fetch.remove(task_name)
 
-            # TODO Trace nodes id where data was sent AND received, same for pull
             if api.args["type_comms"] == "push":
                 node_id, t, content_sent = data
                 if t in ["ping", "ack"]:
@@ -115,6 +116,7 @@ def execute(api: Node):
                     exchanged_data.setdefault(node_id, set()).update(content_sent.keys())
                     coordination_table.update(content_sent)
 
+            # TODO sleep even if there are additional transitions to do
             while len(tasks_list) > 0 and all(dep in coordination_table.keys() for dep in tasks_list[0][2]):
                 task_name, task_time, _ = tasks_list[0]
                 node_cons.set_power(STRESS_CONSO)
@@ -123,12 +125,13 @@ def execute(api: Node):
                 stress_time += task_time
                 tasks_list.pop(0)
                 coordination_table[task_name] = [api.node_id, {}]
+                api.log(f"done {task_name}")
                 if len(tasks_list) == 0:
                     termination_list[api.node_id] = True
                 else:
-                    # TODO same
-                    for task_name in tasks_list[0][2]:
-                        content_to_fetch.add(task_name)
+                    if api.args["type_comms"] != "pull_anticipation":
+                        for task_name in tasks_list[0][2]:
+                            content_to_fetch.add(task_name)
             code, data = api.receivet(INTERFACE_NAME, timeout=max(0, upt_end - api.read("clock")))
         upt_time += UPT_DURATION
     api.turn_off()
