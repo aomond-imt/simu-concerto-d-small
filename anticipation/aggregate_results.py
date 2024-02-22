@@ -3,7 +3,8 @@ import csv
 import numpy as np
 
 vals_to_aggregate = {}
-with open("results.csv") as f:
+result_file_name = "results_fixed_epidemic.csv"
+with open(result_file_name) as f:
     reader = csv.DictReader(f)
     for r in reader:
         key = (r["type_comms"], r["nb_deps_seq"], r["chains_length"], r["is_pipeline"], r["nb_chains"], r["topology"])
@@ -11,7 +12,7 @@ with open("results.csv") as f:
         vals_to_aggregate[key]["dynamic"].append(float(r["dynamic"]))
         vals_to_aggregate[key]["duration"].append(float(r["duration"]))
 
-    with open("aggregated_results.csv", "w") as f:
+    with open(f"aggregated_{result_file_name}", "w") as f:
         csvwriter = csv.writer(f, delimiter=",")
         csvwriter.writerow([
             "static_mean", "static_std", "dynamic_mean", "dynamic_std", "duration_mean", "duration_std",

@@ -70,6 +70,7 @@ def execute(api: Node):
                         content_to_fetch.add(task_name)
 
         # TODO routing ?
+        # TODO ne pas envoyer tout d'un coup, mais service_name par service_name
         code, data = api.receivet(INTERFACE_NAME, timeout=max(0, upt_end - api.read("clock")))
         while data is not None:
             nb_msg_rcv += 1
