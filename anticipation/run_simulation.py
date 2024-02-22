@@ -38,7 +38,7 @@ def compute_topology(name, nb_nodes, bw):
             if n_num < nb_nodes-1:
                 a[n_num + 1] = bw
             B.append(a)
-        return B
+        return np.asarray(B)
 
 
 def run_expe(current_param):
@@ -81,20 +81,22 @@ def run_expe(current_param):
                 metrics_per_nodes.setdefault(l_split[1][:-1], {})[node_num] = float(l_split[2])
 
     # Process metrics
-    metrics_per_nodes["node_cons"]["total"] = sum(metrics_per_nodes["node_cons"].values())
-    metrics_per_nodes["comms_cons"]["total"] = sum(metrics_per_nodes["comms_cons"].values())
-    metrics_per_nodes["upt_count"]["total"] = max(metrics_per_nodes["upt_count"].values())
-    metrics_per_nodes["sleep_time"]["total"] = sum(metrics_per_nodes["sleep_time"].values())
-    metrics_per_nodes["upt_time"]["total"] = sum(metrics_per_nodes["upt_time"].values())
-    metrics_per_nodes["stress_time"]["total"] = sum(metrics_per_nodes["stress_time"].values())
-    metrics_per_nodes["nb_msg_sent"]["total"] = sum(metrics_per_nodes["nb_msg_sent"].values())
-    metrics_per_nodes["nb_msg_rcv"]["total"] = sum(metrics_per_nodes["nb_msg_rcv"].values())
-    metrics_per_nodes["time"]["total"] = max(metrics_per_nodes["time"].values())
-    metrics_per_nodes["static"] = metrics_per_nodes["upt_time"]["total"]*IDLE_CONSO
-    metrics_per_nodes["dynamic"] = metrics_per_nodes["stress_time"]["total"]*STRESS_CONSO + metrics_per_nodes["comms_cons"]["total"]
-    metrics_per_nodes["duration"] = metrics_per_nodes["time"]["total"]
+    total_metrics = {
+        "node_cons": sum(metrics_per_nodes["node_cons"].values()),
+        "comms_cons": sum(metrics_per_nodes["comms_cons"].values()),
+        "upt_count": max(metrics_per_nodes["upt_count"].values()),
+        "sleep_time": sum(metrics_per_nodes["sleep_time"].values()),
+        "upt_time": sum(metrics_per_nodes["upt_time"].values()),
+        "stress_time": sum(metrics_per_nodes["stress_time"].values()),
+        "nb_msg_sent": sum(metrics_per_nodes["nb_msg_sent"].values()),
+        "nb_msg_rcv": sum(metrics_per_nodes["nb_msg_rcv"].values()),
+        "time": max(metrics_per_nodes["time"].values()),
+    }
+    total_metrics["static"] = round(total_metrics["upt_time"] * IDLE_CONSO, 2)
+    total_metrics["dynamic"] = round(total_metrics["stress_time"] * STRESS_CONSO + total_metrics["comms_cons"], 2)
+    total_metrics["duration"] = round(total_metrics["time"], 2)
 
-    return metrics_per_nodes
+    return total_metrics
 
 
 def main():
@@ -119,15 +121,13 @@ def main():
             sweeper.done(current_param)
 
             # Save into csv
-            filename = "results_fixed_epidemic.csv"
+            filename = "results_clique_star_chain.csv"
             with open(filename, "a") as f:
                 csvwriter = csv.writer(f, delimiter=",")
                 if os.stat(filename).st_size == 0:
-                    csvwriter.writerow(["static", "dynamic", "duration", *current_param.keys(), "simu_time"])
+                    csvwriter.writerow([*metrics_per_nodes.keys(), *current_param.keys(), "simu_time"])
                 csvwriter.writerow([
-                    round(metrics_per_nodes["static"], 2),
-                    round(metrics_per_nodes["dynamic"], 2),
-                    round(metrics_per_nodes["duration"], 2),
+                    *metrics_per_nodes.values(),
                     *current_param.values(),
                     simu_time
                 ])
