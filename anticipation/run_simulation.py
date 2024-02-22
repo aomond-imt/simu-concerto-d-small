@@ -103,8 +103,8 @@ def main():
     # Setup parameters
     parameters = {
         "type_comms": ["push", "pull_anticipation"],
-        "nb_deps_seq": [5],
-        "nb_nodes": [5],
+        "nb_deps_seq": [1, 5, 10],
+        "nb_nodes": [5, 10, 15],
         "topology": ["clique", "star", "chain"],
         "routing": [False],
         "id_run": [*range(10)]
