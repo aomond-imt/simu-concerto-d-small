@@ -10,59 +10,47 @@ import numpy as np
 from execo_engine import ParamSweeper, sweep
 
 
+def compute_ons_tasks(nb_nodes, nb_deps_seq, tt):
+    return [
+        [(f"run0_{p_num}", tt, tuple(f"run{n_num}_{p_num}" for n_num in range(1, nb_nodes))) for p_num in range(nb_deps_seq)],
+        *[[(f"run{n_num}_{p_num}", tt, ()) for p_num in range(nb_deps_seq)] for n_num in range(1, nb_nodes)],
+    ]
+
+
+def compute_topology(name, nb_nodes, bw):
+    if name == "clique":
+        return np.full((nb_nodes, nb_nodes), bw)
+    if name == "star":
+        B = [
+            [bw]*nb_nodes,
+            *[[bw, *[0]*(nb_nodes-1)] for _ in range(1, nb_nodes)]
+        ]
+        for i in range(nb_nodes):
+            B[i][i] = bw
+        return np.asarray(B)
+    if name == "chain":
+        B = []
+        for n_num in range(nb_nodes):
+            a = [0]*nb_nodes
+            if n_num > 0:
+                a[n_num - 1] = bw
+            a[n_num] = bw
+            if n_num < nb_nodes-1:
+                a[n_num + 1] = bw
+            B.append(a)
+        return B
+
+
 def run_expe(current_param):
     tt = 5
-    if current_param["is_pipeline"]:
-        ons_tasks = [
-            [(f"run0_{p_num}", tt, tuple(f"run{1 + (current_param['chains_length']-1)*n_num}_{p_num}" for n_num in range(current_param["nb_chains"]))) for p_num in range(current_param["nb_deps_seq"])]
-        ]
-        for c_num in range(current_param["nb_chains"]):
-            for n_num in range(1, current_param["chains_length"] - 1):
-                num = n_num+c_num*(current_param['chains_length'] - 1)
-                ons_tasks.append([
-                    (f"run{num}_{p_num}", tt, (f"run{num+1}_{p_num}",)) for p_num in range(current_param["nb_deps_seq"])
-                ])
-            ons_tasks.append([(f"run{(current_param['chains_length'] - 1)*(c_num+1)}_{p_num}", tt, ()) for p_num in range(current_param["nb_deps_seq"])])
-    else:
-        ons_tasks = [
-            [(f"run0_{p_num}", tt, tuple(f"run{n_num*(current_param['chains_length']-1) + nn_num}_{p_num}" for n_num in range(current_param["nb_chains"]) for nn_num in range(1, current_param["chains_length"]))) for p_num in range(current_param["nb_deps_seq"])]
-        ]
-        for c_num in range(current_param["nb_chains"]):
-            for n_num in range(1, current_param["chains_length"] - 1):
-                num = n_num+c_num*(current_param['chains_length'] - 1)
-                ons_tasks.append([
-                    (f"run{num}_{p_num}", tt, ()) for p_num in range(current_param["nb_deps_seq"])
-                ])
-            ons_tasks.append([(f"run{(current_param['chains_length'] - 1)*(c_num+1)}_{p_num}", tt, ()) for p_num in range(current_param["nb_deps_seq"])])
+    ons_tasks = compute_ons_tasks(current_param["nb_nodes"], current_param["nb_deps_seq"], tt)
 
     # Setup simulator
     BANDWIDTH = 50_000
     IDLE_CONSO = 1.339
     STRESS_CONSO = 2.697
     n_nodes = len(ons_tasks)
-    if current_param["topology"] == "clique":
-        B = np.full((n_nodes, n_nodes), BANDWIDTH)
-    else:
-        B = [
-            [BANDWIDTH, *[BANDWIDTH, *[0]*(current_param["chains_length"]-2)]*current_param["nb_chains"]]
-        ]
-        for c_num in range(current_param["nb_chains"]):
-            b = [0]*n_nodes
-            b[0] = BANDWIDTH
-            b[1 + c_num*(current_param["chains_length"]-1)] = BANDWIDTH
-            b[2 + c_num*(current_param["chains_length"]-1)] = BANDWIDTH
-            B.append(b)
-            for n_num in range(2, current_param["chains_length"]-1):
-                b = [0]*n_nodes
-                b[c_num*(current_param["chains_length"]-1) + n_num-1] = BANDWIDTH
-                b[c_num*(current_param["chains_length"]-1) + n_num] = BANDWIDTH
-                b[c_num*(current_param["chains_length"]-1) + n_num+1] = BANDWIDTH
-                B.append(b)
-            b = [0] * n_nodes
-            b[c_num * (current_param["chains_length"]-1) + (current_param["chains_length"]-1)] = BANDWIDTH
-            b[c_num * (current_param["chains_length"]-1) + (current_param["chains_length"]-2)] = BANDWIDTH
-            B.append(b)
-        B = np.asarray(B)
+    B = compute_topology(current_param["topology"], current_param["nb_nodes"], BANDWIDTH)
     L = np.full((n_nodes, n_nodes), 0)
     smltr = esds.Simulator({"eth0": {"bandwidth": B, "latency": L, "is_wired": False}})
     termination_list = [False]*n_nodes
@@ -113,11 +101,9 @@ def main():
     # Setup parameters
     parameters = {
         "type_comms": ["push", "pull_anticipation"],
-        "nb_deps_seq": [10],
-        "chains_length": [3, 5, 7],  # min > 3
-        "is_pipeline": [True, False],
-        "nb_chains": [1, 3, 5],
-        "topology": ["clique", "star"],
+        "nb_deps_seq": [5],
+        "nb_nodes": [5],
+        "topology": ["clique", "star", "chain"],
         "routing": [False],
         "id_run": [*range(10)]
     }
